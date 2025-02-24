@@ -16,45 +16,54 @@ if ($_SESSION['akses'] == '0') {
 <div class="page-header">
     <h1>History</h1>
 </div>
-<sub>Tabel dapat digeser kiri-kanan <span class="glyphicon glyphicon-resize-horizontal"></span></sub>
+
 <div class="panel panel-default">
     <div class="table-responsive">
         <table class="table table-bordered table-hover table-striped color-white">
             <thead>
                 <tr>
-                    <th style="width: 1%;">No</th>
-                    <th style="width: 12%">Nama</th>
-                    <th style="width: 5%">Penyakit</th>
-                    <th style="width: 5%"> Hasil Diagnosa</th>
-                    <th style="width: 10%">Waktu</th>
-                    <th style="width: 30%">Gejala</th>
+                    <th style="width: 5%;">No</th>
+                    <th style="width: 15%;">Nama</th>
+                    <th style="width: 15%;">Penyakit</th>
+                    <th style="width: 10%;">Hasil Diagnosa</th>
+                    <th style="width: 15%;">Waktu</th>
+                    <th style="width: 40%;">Gejala</th>
                 </tr>
             </thead>
-            <?php
-            $no = 1;
-            foreach ($rows as $row) :
-            ?>
-                <tr>
-                    <td><?= $no++ ?></td>
-                    <td><?= $row->user ?></td>
-                    <td><?= $row->nama_penyakit ?></td>
-                    <td><?= $row->total_bobot ?></td>
-                    <td><?= $row->created_at ?></td>
-                    <td>
-                        <ul>
-                            <?php
-                            $gejala_pilih = json_decode($row->gejala_pilih);
-                            $rows=$db->get_results("SELECT kode_gejala, nama_gejala FROM tb_gejala 
-                            WHERE kode_gejala IN ('" . implode("','", $gejala_pilih) . "')");
-                            foreach ($rows as $row) :
-                            ?>
-                                <li>(<?=$row->kode_gejala ?>)</li>
-                                <li><?= $row->nama_gejala ?></li>
-                            <?php endforeach;?>
-                        </ul>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
+            <tbody>
+                <?php
+                $no = 1;
+                foreach ($rows as $row) :
+                ?>
+                    <tr>
+                        <td class="text-center"><?= $no++ ?></td>
+                        <td><?= htmlspecialchars($row->user) ?></td>
+                        <td><?= htmlspecialchars($row->nama_penyakit) ?></td>
+                        <td class="text-center"><?= number_format($row->total_bobot, 2) ?></td>
+                        <td><?= date("Y-m-d H:i:s", strtotime($row->created_at)) ?></td>
+                        <td>
+                            <ul style="padding-left: 15px; margin: 0;">
+                                <?php
+                                $gejala_pilih = json_decode($row->gejala_pilih, true);
+                                if (!empty($gejala_pilih)) {
+                                    $gejala_query = "SELECT kode_gejala, nama_gejala FROM tb_gejala 
+                                    WHERE kode_gejala IN ('" . implode("','", array_map('addslashes', $gejala_pilih)) . "')";
+                                    $gejala_rows = $db->get_results($gejala_query);
+
+                                    foreach ($gejala_rows as $gejala) :
+                                ?>
+                                        <li><strong>(<?= htmlspecialchars($gejala->kode_gejala) ?>)</strong> <?= htmlspecialchars($gejala->nama_gejala) ?></li>
+                                <?php
+                                    endforeach;
+                                } else {
+                                    echo "<li><em>Tidak ada gejala</em></li>";
+                                }
+                                ?>
+                            </ul>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
         </table>
     </div>
 </div>

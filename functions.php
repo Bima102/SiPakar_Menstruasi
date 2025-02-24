@@ -1,128 +1,143 @@
 <?php
-error_reporting(~E_NOTICE);
-session_start();
+$host = "localhost"; // Sesuaikan dengan kebutuhan
+$user = "root"; // User database
+$password = ""; // Kosongkan jika tidak ada password
+$database = "sipakar"; // Nama database
 
-date_default_timezone_set('asia/hong_kong');
+$conn = new mysqli($host, $user, $password, $database);
 
-include 'config.php';
-include 'includes/db.php';
-include 'includes/bayes.php';
-$db = new DB($config['server'], $config['username'], $config['password'], $config['database_name']);
-
-
-function _post($key, $val = null)
-{
-    global $_POST;
-    if (isset($_POST[$key]))
-        return $_POST[$key];
-    else
-        return $val;
+// Cek koneksi database
+if ($conn->connect_error) {
+    die("Koneksi gagal: " . $conn->connect_error);
 }
 
-function _get($key, $val = null)
-{
-    global $_GET;
-    if (isset($_GET[$key]))
-        return $_GET[$key];
-    else
-        return $val;
+// Mulai session hanya jika belum dimulai
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
+session_regenerate_id(true);
 
-function _session($key, $val = null)
-{
-    global $_SESSION;
-    if (isset($_SESSION[$key]))
-        return $_SESSION[$key];
-    else
-        return $val;
-}
-
-$mod = _get('m');
-$act = _get('act');
-
-
-$db->query("DELETE FROM tb_aturan WHERE kode_penyakit NOT IN (SELECT kode_penyakit FROM tb_penyakit)");
-
-function kode_oto($field, $table, $prefix, $length)
-{
-    global $db;
-    $var = (string) $db->get_var("SELECT $field FROM $table WHERE $field REGEXP '{$prefix}[0-9]{{$length}}' ORDER BY $field DESC");
-    if ($var) {
-        return $prefix . substr(str_repeat('0', $length) . (substr($var, -$length) + 1), -$length);
-    } else {
-        return $prefix . str_repeat('0', $length - 1) . 1;
+function getUserByEmail($email) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
+    if (!$stmt) {
+        die("Query error: " . $conn->error);
     }
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_assoc();
 }
 
-function set_value($key = null, $default = null)
-{
-    global $_POST;
-    if (isset($_POST[$key]))
-        return $_POST[$key];
-
-    if (isset($_GET[$key]))
-        return $_GET[$key];
-
-    return $default;
-}
-function esc_field($str)
-{
-    if ($str)
-        return addslashes($str);
-}
-
-function redirect_js($url)
-{
-    echo '<script type="text/javascript">window.location.replace("' . $url . '");</script>';
-}
-
-function print_msg($msg, $type = 'danger')
-{
-    echo ('<div class="alert alert-' . $type . ' alert-dismissible" role="alert">
-  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>' . $msg . '</div>');
-}
-
-function get_data($selected = array())
-{
-    global $db;
-    $rows = $db->get_results("SELECT r.kode_penyakit, r.kode_gejala,  r.nilai  
-        FROM tb_aturan r  
-        WHERE r.kode_gejala IN ('" . implode("','", $selected) . "') ORDER BY r.kode_penyakit, r.kode_gejala");
-    $data = array();
-    foreach ($rows as $row) {
-        $data[$row->kode_penyakit][$row->kode_gejala] = $row->nilai;
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (empty($_POST['email']) || empty($_POST['password'])) {
+        $_SESSION['error'] = "Email dan Password harus diisi!";
+        header("Location: login.php");
+        exit();
     }
+
+    $email = trim($_POST['email']);
+    $password = trim($_POST['password']);
+
+    $user = getUserByEmail($email);
+
+    if (!$user) {
+        $_SESSION['error'] = "Email tidak ditemukan!";
+        header("Location: login.php");
+        exit();
+    }
+
+    // Debugging: Cek apakah password benar-benar sama
+    if ($password !== $user['password']) {
+        var_dump(bin2hex($password), bin2hex($user['password']));
+        exit();
+    }
+
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_role'] = $user['role'];
+
+    header("Location: dashboard.php");
+    exit();
+}
+function countUsers() {
+    global $conn;
+    $result = $conn->query("SELECT COUNT(*) as total FROM users");
+    $data = $result->fetch_assoc();
+    return $data['total'];
+}
+function countDiagnoses() {
+    global $conn;
+    $result = $conn->query("SELECT COUNT(*) as total FROM diagnosa");
+    
+    if (!$result) {
+        die("Error Query: " . $conn->error);
+    }
+    
+    $data = $result->fetch_assoc();
+    return $data['total'];
+}
+function countPenyakit() {
+    global $conn;
+    $result = $conn->query("SELECT COUNT(*) as total FROM penyakit");
+
+    if (!$result) {
+        die("Error Query: " . $conn->error);
+    }
+
+    $data = $result->fetch_assoc();
+    return $data['total'];
+}
+
+function countGejala() {
+    global $conn;
+    $result = $conn->query("SELECT COUNT(*) as total FROM gejala");
+
+    if (!$result) {
+        die("Error Query: " . $conn->error);
+    }
+
+    $data = $result->fetch_assoc();
+    return $data['total'];
+}
+
+function countAturan() {
+    global $conn;
+    $result = $conn->query("SELECT COUNT(*) as total FROM aturan");
+
+    if (!$result) {
+        die("Error Query: " . $conn->error);
+    }
+
+    $data = $result->fetch_assoc();
+    return $data['total'];
+}
+function hitungNaiveBayes($selected, $conn) {
+    $query = "SELECT p.kode_penyakit, p.nama_penyakit, SUM(a.nilai) AS total_nilai
+              FROM tb_aturan a
+              JOIN tb_penyakit p ON a.kode_penyakit = p.kode_penyakit
+              WHERE a.kode_gejala IN ('" . implode("','", $selected) . "')
+              GROUP BY a.kode_penyakit
+              ORDER BY total_nilai DESC
+              LIMIT 1";
+
+    $result = $conn->query($query);
+    $row = $result->fetch_assoc();
+    return $row['nama_penyakit'] ?? "Tidak Diketahui";
+}
+
+function get_data($selected, $conn) {
+    $data = [];
+
+    foreach ($selected as $kodeGejala) {
+        $query = "SELECT kode_penyakit, nilai FROM aturan WHERE kode_gejala='$kodeGejala'";
+        $result = $conn->query($query);
+
+        while ($row = $result->fetch_assoc()) {
+            $data[$row['kode_penyakit']][$kodeGejala] = $row['nilai'];
+        }
+    }
+
     return $data;
 }
 
-function get_penyakit_option($selected = '')
-{
-    global $db;
-    $rows = $db->get_results("SELECT kode_penyakit, nama_penyakit FROM tb_penyakit ORDER BY kode_penyakit");
-    $a = '';
-    foreach ($rows as $row) {
-        if ($row->kode_penyakit == $selected)
-            $a .= "<option value='$row->kode_penyakit' selected>[$row->kode_penyakit] $row->nama_penyakit</option>";
-        else
-            $a .= "<option value='$row->kode_penyakit'>[$row->kode_penyakit] $row->nama_penyakit</option>";
-    }
-    return $a;
-}
-
-function get_gejala_option($selected = '')
-{
-    global $db;
-    $rows = $db->get_results("SELECT kode_gejala, nama_gejala FROM tb_gejala ORDER BY kode_gejala");
-    $a = '';
-    foreach ($rows as $row) {
-        if ($row->kode_gejala == $selected)
-            $a .= "<option value='$row->kode_gejala' selected>[$row->kode_gejala] $row->nama_gejala</option>";
-        else
-            $a .= "<option value='$row->kode_gejala'>[$row->kode_gejala] $row->nama_gejala</option>";
-    }
-    return $a;
-}
-function dd($arr)
-{
-    echo '<pre>' . print_r($arr, 1) . '</pre>';
-}
+?>

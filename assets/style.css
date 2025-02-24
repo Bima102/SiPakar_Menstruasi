@@ -8,18 +8,18 @@
 }
 
 .navbar{
-    background: linear-gradient(106.84deg, #ea5273 -29.07%, #f18da5 97.32%);
+    background: linear-gradient(106.84deg, #000000 -29.07%, #000000 97.32%);
 }
 
 .btn-primary {
-    background-color: #ea5273;
+    background-color: #5285ea;
     color:#ffffff;
-    border-color: #ea5273;
+    border-color: #fff1f4;
 }
 
 body {
     background-color:#ffffff;
-    color: #ea5273;
+    color: #4f4d4d;
   }
 .color-white {
     color:#ffffff;
@@ -28,9 +28,12 @@ body {
     color: #00bc8c;
 }
 .form-control {
-    background-color:antiquewhite;
+    background-color:rgb(176, 176, 176);
+}
+.form-control {
+    background-color:rgb(176, 176, 176);
 }
 .bg-pink{
-    background: linear-gradient(106.84deg, #ea5273 -29.07%, #f18da5 97.32%);
+    background: linear-gradient(106.84deg, #000000 -29.07%, #000000 97.32%);
     color: #ffffff;
 }

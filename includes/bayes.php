@@ -39,7 +39,7 @@ class Bayes
             /** perulangan gejala dan bobot setiap penyakit */
             foreach ($val as $k => $v) {
                 /** bobot dikalikan dengan bobot gejala */
-                $this->pro_gejala_penyakit[$k][$key] = $v * $this->penyakit[$key]->bobot;
+                $this->pro_gejala_penyakit[$k][$key] = $v * (isset($this->penyakit[$key]['bobot']) ? $this->penyakit[$key]['bobot'] : 0);
             }
         }
 
@@ -59,18 +59,29 @@ class Bayes
                 /** y adalah penyebut (pro gejala) */
                 $this->pro_penyakit[$k][$key]['y'] = $this->pro_gejala[$key];
                 /** probabilitas penyakit adalah x / y */
-                $this->pro_penyakit[$k][$key]['z'] = $this->pro_penyakit[$k][$key]['x'] / $this->pro_penyakit[$k][$key]['y'];
-            }
+                $this->pro_penyakit[$k][$key]['z'] = ($this->pro_penyakit[$k][$key]['y'] != 0) ? 
+                ($this->pro_penyakit[$k][$key]['x'] / $this->pro_penyakit[$k][$key]['y']) : 0;
+                        }
         }
 
-        /** hasil probabilitas penyakit */
-        $this->hasil = [];
-        foreach ($this->penyakit as $key => $val) {
-            $this->hasil[$key] = 0;
-            foreach ((array) $this->pro_penyakit[$key] as $k => $v) {
-                $this->hasil[$key] += $v['z'];
-            }
-        }
+/** hasil probabilitas penyakit */
+$this->hasil = [];
+$total_bobot = 0;
+foreach ($this->penyakit as $key => $val) {
+    $this->hasil[$key] = 0;
+    foreach ((array) $this->pro_penyakit[$key] as $k => $v) {
+        $this->hasil[$key] += $v['z'];
+    }
+    $total_bobot += $this->hasil[$key]; // Menjumlahkan total bobot
+}
+
+/** Tambahkan ini untuk menyimpan total bobot ke database */
+if (!empty($this->hasil)) {
+    $this->total_bobot = $total_bobot;
+} else {
+    $this->total_bobot = 0;
+}
+
 
         /** persentase */
         $this->persen = [];

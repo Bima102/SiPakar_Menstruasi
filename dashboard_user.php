@@ -1,9 +1,10 @@
 <?php
-session_start(); // Mulai session
+session_start();
 include 'functions.php';
-
-// Cek apakah pengguna sudah login
-$isLoggedIn = isset($_SESSION['login']) && $_SESSION['login'] === true;
+if (!isset($_SESSION['login']) || $_SESSION['role'] != 'user') {
+    header("Location: login.php");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,16 +25,10 @@ $isLoggedIn = isset($_SESSION['login']) && $_SESSION['login'] === true;
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= $isLoggedIn ? 'konsultasi.php' : 'login.php?error=login_required' ?>">Konsultasi</a>
-                    </li>
-                    <?php if ($isLoggedIn): ?>
-                        <li class="nav-item"><a class="nav-link" href="dashboard_admin.php">Dashboard</a></li>
-                        <li class="nav-item"><a class="nav-link" href="login.php">Login</a></li>
-                    <?php else: ?>
-                        <li class="nav-item"><a class="nav-link" href="login.php">Login</a></li>
-                    <?php endif; ?>
+                    <li class="nav-item"><a class="nav-link" href="dashboard_user.php">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="konsultasi.php">Konsultasi</a></li>
+                    <li clas= "nav-item"><a class="nav-link" href="history.php">Histori</a></li>
+                    <li class="nav-item"><a class="nav-link" href="login.php">Logout</a></li>
                 </ul>
             </div>
         </div>
@@ -49,15 +44,7 @@ $isLoggedIn = isset($_SESSION['login']) && $_SESSION['login'] === true;
                 <li class="list-group-item">2. Klik tombol <strong>Submit Diagnosa</strong>.</li>
                 <li class="list-group-item">3. Hasil diagnosa akan ditampilkan.</li>
             </ul>
-            <a href="<?= $isLoggedIn ? 'konsultasi.php' : 'login.php?error=login_required' ?>" class="btn btn-primary mt-3">
-                Mulai Konsultasi
-            </a>
-            <li></br><sub><i><strong>Disclaimer</strong></i> : Hasil konsultasi dari sistem adalah berupa Diagnosa Awal. Untuk penanganan lebih lanjut silahkan datang ke dokter.</sub>
-            </br></li>
-            <li>
-                <ol>Anda dapat cek kembali hasil diagnosa pada menu <strong>"History"</strong> dengan cara menuju menu dropdown <span class="glyphicon glyphicon-menu-hamburger"></span> pada pojok kanan atas</ol>
-                <ol>Terimakasih telah memakai sistem untuk konsultasi diagnosa awal gangguan menstruasi</ol>
-            </li>
+            <a href="konsultasi.php" class="btn btn-primary mt-3">Mulai Konsultasi</a>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
