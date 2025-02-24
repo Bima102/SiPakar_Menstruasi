@@ -81,14 +81,14 @@ function hitungNaiveBayes($selectedGejala, $conn) {
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="<?php echo ($role == 'admin') ? 'dashboard_admin.php' : 'dashboard_user.php'; ?>">SiPakar</a>
+            <a class="navbar-brand" href="<?= ($role === 'admin') ? 'dashboard_admin.php' : 'dashboard_user.php' ?>">SiPakar</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="<?php echo ($role == 'admin') ? 'dashboard_admin.php' : 'dashboard_user.php'; ?>">Dashboard</a></li>
-                    <?php if ($role == 'admin') : ?>
+                    <li class="nav-item"><a class="nav-link" href="<?= ($role === 'admin') ? 'dashboard_admin.php' : 'dashboard_user.php' ?>">Dashboard</a></li>
+                    <?php if ($role === 'admin') : ?>
                         <li class="nav-item"><a class="nav-link" href="penyakit.php">Penyakit</a></li>
                         <li class="nav-item"><a class="nav-link" href="gejala.php">Gejala</a></li>
                         <li class="nav-item"><a class="nav-link" href="aturan.php">Aturan</a></li>
@@ -111,21 +111,27 @@ function hitungNaiveBayes($selectedGejala, $conn) {
                     <div class="card-body">
                         <form method="post" action="">
                             <h5 class="text-center mb-3">Pilih Gejala</h5>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="checkAll">
+                                <label class="form-check-label fw-bold" for="checkAll">Pilih Semua</label>
+                            </div>
                             <div class="table-responsive">
                                 <table class="table table-bordered">
                                     <thead>
                                         <tr>
+                                            <th><input type="checkbox" id="checkAllTable"></th>
                                             <th>No</th>
                                             <th>Nama Gejala</th>
-                                            <th>Pilih</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php $no = 1; while ($g = $gejala->fetch_assoc()) : ?>
                                             <tr>
+                                                <td>
+                                                    <input class="form-check-input gejala-checkbox" type="checkbox" name="selected[]" value="<?= $g['kode_gejala'] ?>">
+                                                </td>
                                                 <td><?= $no++ ?></td>
                                                 <td><?= htmlspecialchars($g['nama_gejala']) ?></td>
-                                                <td><input type="checkbox" name="selected[]" value="<?= $g['kode_gejala'] ?>"></td>
                                             </tr>
                                         <?php endwhile; ?>
                                     </tbody>
@@ -140,5 +146,18 @@ function hitungNaiveBayes($selectedGejala, $conn) {
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById("checkAll").addEventListener("change", function() {
+            let checkboxes = document.querySelectorAll(".gejala-checkbox");
+            checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+        });
+
+        document.getElementById("checkAllTable").addEventListener("change", function() {
+            let checkboxes = document.querySelectorAll(".gejala-checkbox");
+            checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+        });
+    </script>
 </body>
 </html>
